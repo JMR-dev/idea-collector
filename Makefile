@@ -1,7 +1,11 @@
 # idea-collect — developer tasks
-# Override COMPOSE with `podman compose` or `podman-compose` if you prefer Podman locally.
-COMPOSE ?= docker compose
+# Dev mirrors production: everything runs under rootless Podman.
 DB_URL  ?= postgres://idea:idea@localhost:5432/idea?sslmode=disable
+
+# Dev Postgres (rootless Podman). Same image as the production quadlet.
+PG_IMAGE     ?= docker.io/library/postgres:18
+PG_CONTAINER ?= idea-collect-db
+PG_VOLUME    ?= idea-collect-pgdata
 
 .DEFAULT_GOAL := help
 
@@ -12,12 +16,18 @@ help: ## Show this help
 
 ## ---- Database ----
 .PHONY: db-up db-down db-logs
-db-up: ## Start Postgres 18 (dev)
-	$(COMPOSE) -f compose.dev.yml up -d db
-db-down: ## Stop dev Postgres (keeps volume)
-	$(COMPOSE) -f compose.dev.yml down
+db-up: ## Start Postgres 18 (rootless Podman; idempotent)
+	podman run -d --replace --name $(PG_CONTAINER) \
+		-e POSTGRES_USER=idea -e POSTGRES_PASSWORD=idea -e POSTGRES_DB=idea \
+		-p 5432:5432 \
+		-v $(PG_VOLUME):/var/lib/postgresql \
+		--health-cmd 'pg_isready -U idea -d idea' \
+		--health-interval 5s --health-retries 10 \
+		$(PG_IMAGE)
+db-down: ## Stop and remove dev Postgres (keeps the data volume)
+	-podman rm -f -t 5 $(PG_CONTAINER)
 db-logs: ## Tail Postgres logs
-	$(COMPOSE) -f compose.dev.yml logs -f db
+	podman logs -f $(PG_CONTAINER)
 
 ## ---- Backend ----
 .PHONY: backend-run backend-build backend-test admin
@@ -46,9 +56,8 @@ e2e: db-up ## Start DB then run backend (use frontend-dev in another shell)
 	$(MAKE) backend-run
 
 ## ---- Containers ----
-# Use podman locally to mirror production; override with ENGINE=docker.
-ENGINE ?= podman
+# Rootless Podman mirrors production (the quadlets load these same images).
 .PHONY: images
 images: ## Build the backend + custom Caddy images
-	$(ENGINE) build -t localhost/idea-collect-backend:latest -f backend/Containerfile backend
-	$(ENGINE) build -t localhost/idea-collect-caddy:latest deploy/caddy
+	podman build -t localhost/idea-collect-backend:latest -f backend/Containerfile backend
+	podman build -t localhost/idea-collect-caddy:latest deploy/caddy

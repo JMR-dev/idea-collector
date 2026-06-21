@@ -35,10 +35,10 @@ deploy/
 
 ## Quick start (local dev)
 
-Prerequisites: Go 1.26+, Node 20+, Podman or Docker.
+Prerequisites: Go 1.26+, Node 20+, rootless Podman.
 
 ```bash
-# 1. Start Postgres 18
+# 1. Start Postgres 18 (rootless Podman; mirrors the production quadlet)
 make db-up
 
 # 2. Run the backend (applies migrations on startup)
