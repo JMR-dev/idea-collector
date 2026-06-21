@@ -1,0 +1,63 @@
+# Caddy config. Environment variables are supplied via the quadlet EnvironmentFile
+# (deploy/quadlets/caddy.container -> secrets/caddy.env):
+#   DOMAIN, ACME_EMAIL, GCP_PROJECT, BACKEND_UPSTREAM, GOOGLE_APPLICATION_CREDENTIALS
+
+{
+	order coraza_waf first
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	# TLS via ACME DNS-01 using Google Cloud DNS (supports wildcards, no inbound :80 needed).
+	tls {
+		dns googleclouddns {
+			gcp_project {$GCP_PROJECT}
+		}
+		resolvers 8.8.8.8 1.1.1.1
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 20MiB
+			roll_keep 10
+		}
+		format json
+	}
+
+	encode zstd gzip
+
+	# Web Application Firewall (OWASP CRS). Runs first for every request.
+	coraza_waf {
+		directives `
+			Include /etc/caddy/coraza/coraza.conf
+			Include /etc/caddy/coraza/coreruleset/crs-setup.conf
+			Include /etc/caddy/coraza/coreruleset/rules/*.conf
+			SecRuleEngine On
+		`
+	}
+
+	# API + health proxied to the Go backend (Caddy active-health-checks the upstream).
+	@api path /api/* /healthz
+	handle @api {
+		reverse_proxy {$BACKEND_UPSTREAM} {
+			health_uri /healthz
+			health_interval 15s
+			health_timeout 5s
+		}
+	}
+
+	# Static SPA; unknown routes fall back to index.html.
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

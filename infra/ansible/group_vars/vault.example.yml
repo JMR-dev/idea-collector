@@ -1,0 +1,21 @@
+---
+# Copy to group_vars/vault.yml and encrypt:
+#   ansible-vault encrypt group_vars/vault.yml
+#
+# Obtain the GCP DNS service-account JSON from the Pulumi output:
+#   pulumi stack output gcpDnsSaKeyBase64 --show-secrets --stack prod | base64 -d
+
+vault_postgres_password: "change-me-strong"
+vault_session_secret: "replace-with-48-random-bytes-base64"   # openssl rand -base64 48
+
+vault_github_app_private_key: |
+  -----BEGIN RSA PRIVATE KEY-----
+  ...your GitHub App private key...
+  -----END RSA PRIVATE KEY-----
+
+vault_gcp_dns_sa_json: |
+  {
+    "type": "service_account",
+    "project_id": "my-gcp-project",
+    "...": "..."
+  }

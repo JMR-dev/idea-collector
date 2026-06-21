@@ -1,0 +1,15 @@
+# Example dev stack config. The dev environment additionally opens ports 5173/8080/5432
+# to sshSourceIps so the stack can be exercised remotely during development.
+#   pulumi config set --secret hcloud:token <hetzner-api-token>
+config:
+  gcp:project: my-gcp-project
+  idea-collect-infra:environment: dev
+  idea-collect-infra:domain: ideas-dev.example.com
+  idea-collect-infra:hcloudServerType: cax11
+  idea-collect-infra:hcloudLocation: fsn1
+  idea-collect-infra:hcloudImage: debian-12
+  idea-collect-infra:dnsZoneName: example-com
+  idea-collect-infra:createDnsZone: "false"
+  idea-collect-infra:sshPublicKey: ssh-ed25519 AAAAC3Nza... you@workstation
+  idea-collect-infra:sshSourceIps:
+    - 203.0.113.0/24

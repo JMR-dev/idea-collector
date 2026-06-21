@@ -1,0 +1,11 @@
+name: idea-collect-infra
+runtime: go
+description: Hetzner Cloud server + Google Cloud DNS for idea-collect.
+
+# State is stored in Cloudflare R2 (S3-compatible). Log in before selecting a stack:
+#
+#   export AWS_ACCESS_KEY_ID=<r2-access-key>
+#   export AWS_SECRET_ACCESS_KEY=<r2-secret-key>
+#   pulumi login "s3://idea-collect-pulumi-state?endpoint=<account-id>.r2.cloudflarestorage.com&region=auto&s3ForcePathStyle=true"
+#
+# Secrets provider is a passphrase (PULUMI_CONFIG_PASSPHRASE) since R2 only holds state.

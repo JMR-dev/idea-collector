@@ -1,0 +1,8 @@
+[Unit]
+Description=idea-collect Caddy config volume (autosaved config)
+
+[Volume]
+VolumeName=caddy-config
+
+[Install]
+WantedBy=default.target

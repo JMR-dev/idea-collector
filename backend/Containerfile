@@ -1,0 +1,18 @@
+# Backend image: static Go binary on distroless (no shell, runs as nonroot).
+# Build context is the backend/ directory:
+#   podman build -t localhost/idea-collect-backend:latest -f backend/Containerfile backend
+FROM golang:1.26-alpine AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server \
+ && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/admin ./cmd/admin
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/server /usr/local/bin/server
+COPY --from=build /out/admin /usr/local/bin/admin
+USER nonroot:nonroot
+EXPOSE 8080
+# Health is checked by Caddy's reverse_proxy (health_uri /healthz) since distroless has no shell.
+ENTRYPOINT ["/usr/local/bin/server"]

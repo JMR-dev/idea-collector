@@ -1,0 +1,10 @@
+[Unit]
+Description=idea-collect internal network
+
+[Network]
+NetworkName=idea-collect
+# Not Internal: backend needs to reach the GitHub API and Caddy needs ACME/DNS + the
+# internet. Postgres and the backend are simply never published to the host.
+
+[Install]
+WantedBy=default.target

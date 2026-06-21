@@ -1,0 +1,21 @@
+[Unit]
+Description=idea-collect backend API
+Requires=postgres.service
+After=postgres.service
+
+[Container]
+Image=localhost/idea-collect-backend:latest
+ContainerName=backend
+Network=idea-collect.network
+EnvironmentFile=%h/idea-collect/secrets/backend.env
+# GitHub App private key, mounted read-only.
+Volume=%h/idea-collect/secrets/github-app.private-key.pem:/etc/idea/github-app.pem:ro,Z
+# Only reachable inside idea-collect.network; Caddy proxies to it.
+
+[Service]
+Restart=always
+# Postgres may still be starting on first boot; let the backend retry.
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

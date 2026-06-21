@@ -1,0 +1,38 @@
+# Go
+/backend/bin/
+*.test
+*.out
+
+# Node / Vite
+node_modules/
+/frontend/dist/
+.vite/
+
+# Env / secrets
+*.env
+.env
+.env.*
+!.env.example
+*-credentials.json
+*.pem
+*.key
+!**/sample.key
+secrets/
+*.vault
+
+# Pulumi
+Pulumi.*.yaml.bak
+.pulumi/
+/infra/pulumi/pulumi
+/infra/pulumi/pulumi.exe
+
+# Ansible
+*.retry
+infra/ansible/inventory/hosts.generated.ini
+infra/ansible/vault_pass.txt
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

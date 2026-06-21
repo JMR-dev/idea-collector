@@ -1,0 +1,8 @@
+[Unit]
+Description=idea-collect Postgres data volume
+
+[Volume]
+VolumeName=idea-pgdata
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,23 @@
+[Unit]
+Description=idea-collect PostgreSQL
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/library/postgres:18
+ContainerName=postgres
+Network=idea-collect.network
+Volume=idea-pgdata.volume:/var/lib/postgresql/data:Z
+EnvironmentFile=%h/idea-collect/secrets/postgres.env
+# Only reachable inside idea-collect.network; no PublishPort.
+HealthCmd=pg_isready -U idea -d idea
+HealthInterval=10s
+HealthRetries=5
+HealthStartPeriod=20s
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

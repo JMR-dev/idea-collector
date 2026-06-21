@@ -1,0 +1,31 @@
+---
+- name: Install Podman and rootless dependencies
+  ansible.builtin.apt:
+    name:
+      - podman
+      - slirp4netns
+      - fuse-overlayfs
+      - uidmap
+      - passt
+    state: present
+
+- name: Allow rootless binding of privileged ports (80/443)
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: "80"
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Enable lingering so the deploy user's services start at boot
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ deploy_user }}"
+    creates: "/var/lib/systemd/linger/{{ deploy_user }}"
+
+- name: Ensure the user quadlet directory exists
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}/.config/containers/systemd"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"

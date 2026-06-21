@@ -1,0 +1,105 @@
+---
+- name: Resolve deploy user uid
+  ansible.builtin.command: "id -u {{ deploy_user }}"
+  register: deploy_uid_result
+  changed_when: false
+
+- name: Set user systemd environment
+  ansible.builtin.set_fact:
+    user_env:
+      XDG_RUNTIME_DIR: "/run/user/{{ deploy_uid_result.stdout }}"
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ deploy_uid_result.stdout }}/bus"
+
+- name: Ensure runtime directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+  loop:
+    - "{{ app_dir }}/www"
+    - "{{ app_dir }}/logs"
+    - "{{ app_dir }}/build"
+
+- name: Sync backend build context
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../../backend/"
+    dest: "{{ app_dir }}/build/backend/"
+    delete: true
+    rsync_opts:
+      - "--exclude=bin"
+      - "--exclude=.git"
+  become: false
+
+- name: Sync caddy build context
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../../deploy/caddy/"
+    dest: "{{ app_dir }}/build/caddy/"
+    delete: true
+  become: false
+
+- name: Sync built frontend (run `make frontend-build` first)
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../../frontend/dist/"
+    dest: "{{ app_dir }}/www/"
+    delete: true
+  become: false
+
+- name: Build backend image
+  ansible.builtin.command:
+    cmd: podman build -t localhost/idea-collect-backend:latest -f Containerfile .
+    chdir: "{{ app_dir }}/build/backend"
+  become: true
+  become_user: "{{ deploy_user }}"
+  environment: "{{ user_env }}"
+
+- name: Build Caddy image (Coraza + Google Cloud DNS)
+  ansible.builtin.command:
+    cmd: podman build -t localhost/idea-collect-caddy:latest .
+    chdir: "{{ app_dir }}/build/caddy"
+  become: true
+  become_user: "{{ deploy_user }}"
+  environment: "{{ user_env }}"
+
+- name: Install Caddyfile
+  ansible.builtin.copy:
+    remote_src: true
+    src: "{{ app_dir }}/build/caddy/Caddyfile"
+    dest: "{{ app_dir }}/Caddyfile"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+
+- name: Install quadlet units
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../deploy/quadlets/{{ item }}"
+    dest: "/home/{{ deploy_user }}/.config/containers/systemd/{{ item }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+  loop:
+    - idea-collect.network
+    - idea-pgdata.volume
+    - caddy-data.volume
+    - caddy-config.volume
+    - postgres.container
+    - backend.container
+    - caddy.container
+
+- name: Reload user systemd (generate quadlet services)
+  ansible.builtin.systemd_service:
+    scope: user
+    daemon_reload: true
+  become: true
+  become_user: "{{ deploy_user }}"
+  environment: "{{ user_env }}"
+
+- name: Start the stack (caddy pulls in backend -> postgres)
+  ansible.builtin.systemd_service:
+    name: caddy.service
+    scope: user
+    state: restarted
+  become: true
+  become_user: "{{ deploy_user }}"
+  environment: "{{ user_env }}"

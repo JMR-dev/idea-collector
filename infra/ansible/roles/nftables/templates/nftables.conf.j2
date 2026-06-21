@@ -1,0 +1,37 @@
+#!/usr/sbin/nft -f
+# Managed by Ansible (nftables role). Default-drop inbound.
+# Source restriction for SSH and dev ports is enforced at the Hetzner Cloud firewall
+# (Pulumi sshSourceIps); this host firewall is the defense-in-depth default-drop layer.
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        iif "lo" accept
+        ct state established,related accept
+        ct state invalid drop
+
+        ip protocol icmp accept
+        ip6 nexthdr ipv6-icmp accept
+
+        tcp dport {{ ssh_port }} accept
+        tcp dport { 80, 443 } accept
+        udp dport 443 accept
+{% if environment_name == 'dev' %}
+
+        # Development-only higher ports (Vite, backend, Postgres).
+        tcp dport { 5173, 8080, 5432 } accept
+{% endif %}
+    }
+
+    chain forward {
+        # Rootless Podman uses pasta/slirp in userspace; container egress is via the
+        # host's own routing. Keep forward permissive but the box default-drops input.
+        type filter hook forward priority 0; policy accept;
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}

@@ -1,0 +1,15 @@
+# Example prod stack config. Set secrets via the CLI (never commit them):
+#   pulumi config set --secret hcloud:token <hetzner-api-token>
+#   gcp auth uses GOOGLE_CREDENTIALS / application-default credentials.
+config:
+  gcp:project: my-gcp-project
+  idea-collect-infra:environment: prod
+  idea-collect-infra:domain: ideas.example.com
+  idea-collect-infra:hcloudServerType: cax11
+  idea-collect-infra:hcloudLocation: fsn1
+  idea-collect-infra:hcloudImage: debian-12
+  idea-collect-infra:dnsZoneName: example-com
+  idea-collect-infra:createDnsZone: "false"
+  idea-collect-infra:sshPublicKey: ssh-ed25519 AAAAC3Nza... you@workstation
+  idea-collect-infra:sshSourceIps:
+    - 203.0.113.0/24

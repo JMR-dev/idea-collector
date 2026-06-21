@@ -1,0 +1,29 @@
+# Custom Caddy with the Coraza WAF and Google Cloud DNS ACME plugins, bundled with
+# the OWASP Core Rule Set.
+#
+# Build context is deploy/caddy/:
+#   podman build -t localhost/idea-collect-caddy:latest deploy/caddy
+#
+# NOTE: pin the plugin + CRS versions you validate. The Coraza directive syntax and
+# CRS include paths should be confirmed against these versions at build time.
+FROM caddy:2.9-builder AS builder
+RUN xcaddy build \
+    --with github.com/corazawaf/coraza-caddy/v2 \
+    --with github.com/caddy-dns/googleclouddns
+
+FROM caddy:2.9
+
+# OWASP Core Rule Set.
+ARG CRS_VERSION=v4.10.0
+RUN apk add --no-cache git \
+ && git clone --depth 1 --branch ${CRS_VERSION} \
+      https://github.com/coreruleset/coreruleset /etc/caddy/coraza/coreruleset \
+ && cp /etc/caddy/coraza/coreruleset/crs-setup.conf.example \
+      /etc/caddy/coraza/coreruleset/crs-setup.conf \
+ && apk del git
+
+COPY coraza/coraza.conf /etc/caddy/coraza/coraza.conf
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+
+# The Caddyfile, static site, GCP credentials and logs are bind-mounted at runtime
+# (see deploy/quadlets/caddy.container).

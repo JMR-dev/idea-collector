@@ -1,0 +1,26 @@
+[Unit]
+Description=idea-collect Caddy (TLS, WAF, reverse proxy)
+Requires=backend.service
+After=backend.service
+
+[Container]
+Image=localhost/idea-collect-caddy:latest
+ContainerName=caddy
+Network=idea-collect.network
+PublishPort=80:80
+PublishPort=443:443
+PublishPort=443:443/udp
+Volume=caddy-data.volume:/data:Z
+Volume=caddy-config.volume:/config:Z
+Volume=%h/idea-collect/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+Volume=%h/idea-collect/www:/srv/www:ro,Z
+Volume=%h/idea-collect/secrets/gcp-dns-sa.json:/etc/caddy/gcp-dns-sa.json:ro,Z
+Volume=%h/idea-collect/logs:/var/log/caddy:Z
+EnvironmentFile=%h/idea-collect/secrets/caddy.env
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

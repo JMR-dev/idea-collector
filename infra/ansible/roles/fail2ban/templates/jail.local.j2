@@ -1,0 +1,26 @@
+# Managed by Ansible (fail2ban role). Bans are applied via nftables.
+[DEFAULT]
+bantime = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+banaction = nftables-multiport
+banaction_allports = nftables-allports
+backend = auto
+
+[sshd]
+enabled = true
+port = {{ ssh_port }}
+
+[caddy-auth]
+enabled = true
+filter = caddy-auth
+port = http,https
+logpath = {{ app_dir }}/logs/access.log
+maxretry = {{ fail2ban_maxretry }}
+
+[caddy-coraza]
+enabled = true
+filter = caddy-coraza
+port = http,https
+logpath = {{ app_dir }}/logs/access.log
+maxretry = 3

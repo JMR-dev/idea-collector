@@ -1,0 +1,13 @@
+---
+# Configure and deploy idea-collect onto the Hetzner host provisioned by Pulumi.
+# Run:  ansible-playbook site.yml --ask-vault-pass
+- name: idea-collect host
+  hosts: idea_collect
+  become: true
+  roles:
+    - base       # OS hardening, deploy user, unattended upgrades
+    - nftables   # default-drop host firewall (env-aware)
+    - podman     # rootless Podman + linger + unprivileged port sysctl
+    - fail2ban   # SSH + Caddy/Coraza jails
+    - secrets    # render env files + keys from vault (mode 0600)
+    - deploy     # build images, install quadlets, start services, migrate

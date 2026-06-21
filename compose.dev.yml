@@ -1,0 +1,20 @@
+# Local development only. Production uses Podman quadlets in deploy/quadlets/.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: idea
+      POSTGRES_PASSWORD: idea
+      POSTGRES_DB: idea
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idea -d idea"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

@@ -1,0 +1,8 @@
+[Unit]
+Description=idea-collect Caddy data volume (certificates, ACME state)
+
+[Volume]
+VolumeName=caddy-data
+
+[Install]
+WantedBy=default.target

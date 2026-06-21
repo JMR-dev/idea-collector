@@ -1,0 +1,33 @@
+---
+# Copy to group_vars/all.yml and adjust. Secrets live in group_vars/vault.yml (see
+# vault.example.yml) and are encrypted with ansible-vault.
+
+environment_name: prod            # prod | dev (dev also opens 5173/8080/5432)
+
+deploy_user: deploy
+app_dir: "/home/{{ deploy_user }}/idea-collect"
+
+# Public SSH keys granted to root and the deploy user.
+admin_ssh_public_keys:
+  - "ssh-ed25519 AAAAC3Nza... you@workstation"
+
+ssh_port: 22
+
+# Application / Caddy settings.
+domain: ideas.example.com
+acme_email: ops@example.com
+gcp_project: my-gcp-project
+
+# GitHub App identifiers (the private key is in vault).
+github_app_id: 123456
+github_app_installation_id: 12345678
+
+# Tuning.
+auth_rate_per_minute: 10
+auth_rate_burst: 5
+session_ttl: 2h
+
+# fail2ban.
+fail2ban_bantime: 1h
+fail2ban_findtime: 10m
+fail2ban_maxretry: 5
