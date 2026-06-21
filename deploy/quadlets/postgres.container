@@ -7,7 +7,9 @@ After=network-online.target
 Image=docker.io/library/postgres:18
 ContainerName=postgres
 Network=idea-collect.network
-Volume=idea-pgdata.volume:/var/lib/postgresql/data:Z
+# Mount the parent so postgres:18 stores data in its version-specific subdir
+# (/var/lib/postgresql/18/...), which keeps in-place pg_upgrade possible.
+Volume=idea-pgdata.volume:/var/lib/postgresql:Z
 EnvironmentFile=%h/idea-collect/secrets/postgres.env
 # Only reachable inside idea-collect.network; no PublishPort.
 HealthCmd=pg_isready -U idea -d idea
